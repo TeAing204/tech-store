@@ -87,4 +87,15 @@ public class UserController {
         List<UserDTO> restoredUsers = userService.restoreUsers(userIds);
         return new ResponseEntity<>(restoredUsers, HttpStatus.OK);
     }
+    @PostMapping("/admin/user/{userId}/image")
+    public ResponseEntity<UserDTO> updateUserImage(@PathVariable Long userId, @RequestParam("image") MultipartFile image) throws Exception {
+        UserDTO userDTO = userService.updateUserImage(userId, image);
+        return new ResponseEntity<>(userDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/admin/users/{userId}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long userId){
+        UserDTO userDTO = userService.getUserById(userId);
+        return new ResponseEntity<>(userDTO, HttpStatus.OK);
+    }
 }

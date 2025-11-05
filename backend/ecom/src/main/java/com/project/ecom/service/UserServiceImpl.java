@@ -52,7 +52,13 @@ public class UserServiceImpl implements UserService{
         if (users.isEmpty()){
             throw new APIException("Danh sách trống");
         }
-        List<UserDTO> userDTOS = users.stream().map(user -> modelMapper.map(user, UserDTO.class)).toList();
+        List<UserDTO> userDTOS = users.stream().map(user -> {
+            UserDTO dto = modelMapper.map(user, UserDTO.class);
+            if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+                dto.setAvatar(constructImageUrl(user.getAvatar()));
+            }
+            return dto;
+        }).toList();
         UserResponse userResponse = new UserResponse();
         userResponse.setContent(userDTOS);
         userResponse.setPageNumber(userPage.getNumber());
@@ -168,6 +174,29 @@ public class UserServiceImpl implements UserService{
 
         return dto;
     }
+
+    @Override
+    public UserDTO updateUserImage(Long userId, MultipartFile image) throws IOException {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", userId));
+        String fileName = fileService.uploadImage(path, image);
+        user.setAvatar(fileName);
+        User savedUser = userRepository.save(user);
+        return modelMapper.map(savedUser, UserDTO.class);
+    }
+
+    @Override
+    public UserDTO getUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", userId));
+        UserDTO dto = modelMapper.map(user, UserDTO.class);
+        // Xử lý ảnh đại diện
+        if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+            dto.setAvatar(constructImageUrl(user.getAvatar()));
+        }
+        return dto;
+    }
+
 
     private String constructImageUrl(String imageName) {
         return imageBaseUrl.endsWith("/") ? imageBaseUrl + imageName : imageBaseUrl + "/" + imageName;

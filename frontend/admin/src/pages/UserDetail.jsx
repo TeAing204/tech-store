@@ -13,48 +13,62 @@ import {
   Select,
   useTheme,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import { useForm } from "react-hook-form";
-import { useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
-import { updateUser } from "../features/users/userSlice";
+import {
+  fetchUserById,
+  updateUser,
+  updateUserImage,
+} from "../features/users/userSlice";
 import Header from "../layouts/Header";
 import BackButton from "../components/action/BackButton";
 import PasswordInput from "../features/users/PasswordInput";
 import InputField from "../components/form/InputField";
+import IsLoading from "../components/spinner/IsLoading";
+import EditSquareIcon from '@mui/icons-material/EditSquare';
 const UserDetail = () => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [openAvatarDialog, setOpenAvatarDialog] = useState(false);
   const dispatch = useDispatch();
-  const location = useLocation();
-  const userFromState = location.state?.user;
-  const { userId } = userFromState || {};
-  const user = useSelector((state) =>
-    state.users.users.find((u) => u.userId === userId)
-  );
+  const { userId } = useParams();
+  const user = useSelector((state) => state.users.selectedUser);
+  useEffect(() => {
+    dispatch(fetchUserById(userId));
+  }, [userId, dispatch]);
   const handleClickOpen = () => {
     setOpen(true);
   };
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     mode: "onTouched",
-    defaultValues: {
-      username: user.username,
-      email: user.email,
-      status: user.status,
-      sdt: user.phoneNumber,
-      buildingName: user.addresses?.[0]?.buildingName,
-      street: user.addresses?.[0]?.street,
-      country: user.addresses?.[0]?.country,
-    },
   });
+
+  useEffect(() => {
+    if (user) {
+      reset({
+        username: user.username,
+        email: user.email,
+        status: user.status,
+        sdt: user.phoneNumber,
+        buildingName: user.addresses?.[0]?.buildingName,
+        street: user.addresses?.[0]?.street,
+        country: user.addresses?.[0]?.country,
+      });
+    }
+  }, [user, reset]);
   const handleClose = () => {
     setOpen(false);
+    setOpenAvatarDialog(false);
   };
 
   const onSubmit = async (data) => {
@@ -76,6 +90,27 @@ const UserDetail = () => {
       toast.error("Cập nhật người dùng thất bại!");
     }
   };
+  const handleUploadAvatar = async () => {
+    if (!selectedAvatar) return toast.error("Vui lòng chọn ảnh!");
+
+    try {
+      await dispatch(
+        updateUserImage({ userId, imageFile: selectedAvatar })
+      ).unwrap();
+      toast.success("Cập nhật ảnh đại diện thành công!");
+      dispatch(fetchUserById(userId));
+      handleClose();
+    } catch (err) {
+      console.log("Lỗi: ", err);
+      toast.error("Cập nhật ảnh đại diện thất bại!");
+    }
+  };
+  if (!user)
+    return (
+      <div>
+        <IsLoading />
+      </div>
+    );
 
   return (
     <div>
@@ -92,11 +127,29 @@ const UserDetail = () => {
             }}
           >
             <div className="flex flex-col justify-center items-center">
-              <Avatar
-                variant="rounded"
-                sx={{ width: "120px", height: "120px", mt: 6 }}
-              ></Avatar>
-              <span className="text-xl font-medium my-4">{user.username}</span>
+              <div className="relative mt-6">
+                <Avatar
+                  variant="rounded"
+                  src={user.avatar || ""}
+                  sx={{ width: 120, height: 120 }}
+                />
+
+                {/* Icon chỉnh sửa ảnh */}
+                <IconButton
+                  size="small"
+                  color="secondary"
+                  onClick={() => setOpenAvatarDialog(true)}
+                  sx={{
+                    position: "absolute",
+                    top: "-4px",
+                    right: "-30px",
+                    "&:hover": { backgroundColor: theme.palette.action.hover },
+                  }}
+                >
+                  <EditSquareIcon/>
+                </IconButton>
+              </div>
+              <span className="text-xl font-medium mt-4 mb-1">{user.username}</span>
               <span className="border border-[#16a34a] text-[#16a34a] bg-[rgba(22,163,74,0.1)] px-2 py-0.5 rounded-md">
                 {user?.roles?.map((r) =>
                   r.roleName
@@ -297,6 +350,65 @@ const UserDetail = () => {
               </Button>
             </DialogActions>
           </form>
+        </Dialog>
+        {/* Dialog thay đổi ảnh đại diện */}
+        <Dialog
+          open={openAvatarDialog}
+          onClose={() => setOpenAvatarDialog(false)}
+          aria-labelledby="upload-avatar-dialog"
+          slotProps={{
+            paper: {
+              sx: {
+                width: "400px",
+                p: "20px",
+                textAlign: "center",
+              },
+            },
+          }}
+        >
+          <DialogTitle id="upload-avatar-dialog">
+            Cập nhật ảnh đại diện
+          </DialogTitle>
+          <DialogContent>
+            <div className="flex flex-col items-center space-y-4 mt-2">
+              <Avatar
+                variant="rounded"
+                src={
+                  selectedAvatar
+                    ? URL.createObjectURL(selectedAvatar)
+                    : user.avatar || ""
+                }
+                sx={{ width: 120, height: 120 }}
+              />
+              <Button variant="outlined" color="secondary" component="label">
+                Chọn ảnh
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={(e) => setSelectedAvatar(e.target.files[0])}
+                />
+              </Button>
+              {selectedAvatar && (
+                <span className="text-sm text-gray-500 mt-2">
+                  {selectedAvatar.name}
+                </span>
+              )}
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenAvatarDialog(false)} color="error">
+              Hủy
+            </Button>
+            <Button
+              onClick={handleUploadAvatar}
+              color="secondary"
+              variant="contained"
+              disabled={!selectedAvatar}
+            >
+              Cập nhật
+            </Button>
+          </DialogActions>
         </Dialog>
       </Box>
     </div>

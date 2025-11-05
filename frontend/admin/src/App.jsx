@@ -50,7 +50,6 @@ function App() {
                 <Route path="/admin/users/user/:userId" element={<UserDetail/>}/>
               </Route>
             </Route>
-
             {/* mặc định */}
             <Route path="/" element={<Navigate to="/admin" replace />} />
             <Route path="*" element={<Page404/>} />

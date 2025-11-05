@@ -22,4 +22,8 @@ public interface UserService {
     List<UserDTO> deleteUsers(List<Long> userIds);
 
     UserDTO updateUser(Long userId, UserDTO userDTO, MultipartFile image) throws IOException;
+
+    UserDTO updateUserImage(Long userId, MultipartFile image) throws IOException;
+
+    UserDTO getUserById(Long userId);
 }

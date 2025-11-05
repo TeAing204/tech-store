@@ -9,6 +9,7 @@ import {
   FormGroup,
   RadioGroup,
   useTheme,
+  useMediaQuery, 
 } from "@mui/material";
 import InputIcon from "@mui/icons-material/Input";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
@@ -25,8 +26,8 @@ function CustomTabPanel(props) {
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`vertical-tabpanel-${index}`}
-      aria-labelledby={`vertical-tab-${index}`}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
       {...other}
       style={{ flex: 1, padding: 16 }}
     >
@@ -37,22 +38,25 @@ function CustomTabPanel(props) {
 
 function a11yProps(index) {
   return {
-    id: `vertical-tab-${index}`,
-    "aria-controls": `vertical-tabpanel-${index}`,
+    id: `tab-${index}`,
+    "aria-controls": `tabpanel-${index}`,
   };
 }
 
 export default function SidebarTabs({ register, errors }) {
   const [value, setValue] = React.useState(0);
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm")); 
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
-  const theme = useTheme();
+
   return (
     <Box
       sx={{
         display: "flex",
+        flexDirection: isSmallScreen ? "column" : "row", 
         border: "1px solid",
         borderColor: theme.palette.border.main,
         borderRadius: 2,
@@ -60,70 +64,38 @@ export default function SidebarTabs({ register, errors }) {
       }}
     >
       <Tabs
-        orientation="vertical"
+        orientation={isSmallScreen ? "horizontal" : "vertical"} 
         variant="scrollable"
         value={value}
         onChange={handleChange}
-        aria-label="Vertical tabs with icons"
+        aria-label="responsive tabs"
         sx={{
-          borderRight: 1,
+          borderRight: isSmallScreen ? 0 : 1,
+          borderBottom: isSmallScreen ? 1 : 0,
           borderColor: "divider",
-          marginY: 2,
-          minWidth: 180,
-          alignItems: "flex-start",
+          marginY: isSmallScreen ? 0 : 2,
+          minWidth: isSmallScreen ? "auto" : 180,
+          alignItems: isSmallScreen ? "center" : "flex-start",
           "& .MuiTab-root": {
             justifyContent: "flex-start",
             minHeight: "40px",
             textAlign: "left",
             color: theme.palette.text.primary,
-            "&.Mui-focusVisible": {
-              color: theme.palette.secondary.main,
-            },
             "&.Mui-selected": {
               color: theme.palette.secondary.main,
             },
           },
         }}
       >
-        <Tab
-          icon={<SellIcon size={18} />}
-          iconPosition="start"
-          label="Giá cả"
-          {...a11yProps(0)}
-        />
-        <Tab
-          icon={<InputIcon size={16} />}
-          iconPosition="start"
-          label="Nhập hàng"
-          {...a11yProps(1)}
-        />
-        <Tab
-          icon={<LocalShippingIcon size={16} />}
-          iconPosition="start"
-          label="Vận chuyển"
-          {...a11yProps(2)}
-        />
-        <Tab
-          icon={<PublicIcon size={18} />}
-          iconPosition="start"
-          label="Giao hàng toàn cầu"
-          {...a11yProps(0)}
-        />
-        <Tab
-          icon={<TuneIcon size={16} />}
-          iconPosition="start"
-          label="Thuộc tính"
-          {...a11yProps(1)}
-        />
-        <Tab
-          icon={<LockOutlinedIcon size={16} />}
-          iconPosition="start"
-          label="Nâng cao"
-          {...a11yProps(2)}
-        />
+        <Tab icon={<SellIcon size={18} />} iconPosition="start" label="Giá cả" {...a11yProps(0)} />
+        <Tab icon={<InputIcon size={16} />} iconPosition="start" label="Nhập hàng" {...a11yProps(1)} />
+        <Tab icon={<LocalShippingIcon size={16} />} iconPosition="start" label="Vận chuyển" {...a11yProps(2)} />
+        <Tab icon={<PublicIcon size={18} />} iconPosition="start" label="Giao hàng toàn cầu" {...a11yProps(3)} />
+        <Tab icon={<TuneIcon size={16} />} iconPosition="start" label="Thuộc tính" {...a11yProps(4)} />
+        <Tab icon={<LockOutlinedIcon size={16} />} iconPosition="start" label="Nâng cao" {...a11yProps(5)} />
       </Tabs>
 
-      {/* Nội dung */}
+      {/* Nội dung Tab */}
       <CustomTabPanel value={value} index={0}>
         <div className="flex flex-col xl:flex-row gap-4">
           <InputField
@@ -146,88 +118,54 @@ export default function SidebarTabs({ register, errors }) {
           />
         </div>
       </CustomTabPanel>
+
       <CustomTabPanel value={value} index={1}>
         <InputField
-            label="Thêm vào kho"
-            id="quantity"
-            type="number"
-            placeholder="Nhập số lượng nhập vào"
-            register={register}
-            errors={errors}
-          />
+          label="Thêm vào kho"
+          id="quantity"
+          type="number"
+          placeholder="Nhập số lượng nhập vào"
+          register={register}
+          errors={errors}
+        />
       </CustomTabPanel>
+
       <CustomTabPanel value={value} index={2}>
-        <div>
-          <FormControl className="space-y-4">
-            <label htmlFor="" className="text-md font-semibold">
-              Hình thức vận chuyển
-            </label>
-            <RadioGroup
-              defaultValue="bySeller"
-              name="radio-buttons-group"
-              className="space-y-4"
-            >
-              <RadioForm
-                value="bySeller"
-                title="Được thực hiển bởi người bán"
-                description="Bạn sẽ chịu trách nhiệm giao hàng. Bất kỳ hư hỏng hoặc chậm trễ nào trong quá trình vận chuyển có thể khiến bạn phải trả phí thiệt hại."
-              />
-              <RadioForm
-                value="byTeAing"
-                title="Được thực hiển bởi TeAing"
-                description="Sản phẩm của bạn, trách nhiệm của chúng tôi.
-                  Chỉ với một khoản phí nhỏ, chúng tôi sẽ xử lý quy trình giao hàng cho bạn."
-              />
-            </RadioGroup>
-          </FormControl>
-        </div>
+        <FormControl className="space-y-4">
+          <label className="text-md font-semibold">Hình thức vận chuyển</label>
+          <RadioGroup defaultValue="bySeller" className="space-y-4">
+            <RadioForm
+              value="bySeller"
+              title="Được thực hiện bởi người bán"
+              description="Bạn chịu trách nhiệm giao hàng..."
+            />
+            <RadioForm
+              value="byTeAing"
+              title="Được thực hiện bởi TeAing"
+              description="Chúng tôi sẽ xử lý quy trình giao hàng..."
+            />
+          </RadioGroup>
+        </FormControl>
       </CustomTabPanel>
+
       <CustomTabPanel value={value} index={3}>
-        <div>
-          <FormControl className="space-y-4">
-            <label htmlFor="" className="text-md font-semibold">
-              Phạm vi giao hàng
-            </label>
-            <RadioGroup
-              defaultValue="select"
-              name="radio-buttons-group"
-              className="space-y-2"
-            >
-              <RadioForm
-                value="worldwideDelivery"
-                title="Giao hàng trên thế giới"
-                description="Chỉ có sẵn với phương thức vận chuyển: Fullfilled by TeAing"
-              />
-              <RadioForm value="select" title="Các quốc gia được chọn" />
-              <RadioForm
-                value="localDelivery"
-                title="Giao hàng tận nơi"
-                description="Giao hàng đến quốc gia cư trú của bạn."
-              />
-            </RadioGroup>
-          </FormControl>
-        </div>
+        <FormControl className="space-y-4">
+          <label className="text-md font-semibold">Phạm vi giao hàng</label>
+          <RadioGroup defaultValue="select" className="space-y-2">
+            <RadioForm value="worldwideDelivery" title="Giao hàng trên thế giới" />
+            <RadioForm value="select" title="Các quốc gia được chọn" />
+            <RadioForm value="localDelivery" title="Giao hàng tận nơi" />
+          </RadioGroup>
+        </FormControl>
       </CustomTabPanel>
+
       <CustomTabPanel value={value} index={4}>
-        <div>
-          <FormGroup>
-            <label htmlFor="" className="text-md font-semibold pb-4">
-              Thuộc tính
-            </label>
-            <FormControlLabel
-              control={<Checkbox color="secondary" defaultChecked />}
-              label="Sản phẩm dễ vỡ"
-            />
-            <FormControlLabel
-              control={<Checkbox color="secondary" />}
-              label="Có thể phân hủy sinh học"
-            />
-            <FormControlLabel
-              control={<Checkbox color="secondary" />}
-              label="Sản phẩm đông lạnh"
-            />
-          </FormGroup>
-        </div>
+        <FormGroup>
+          <label className="text-md font-semibold pb-4">Thuộc tính</label>
+          <FormControlLabel control={<Checkbox color="secondary" defaultChecked />} label="Sản phẩm dễ vỡ" />
+          <FormControlLabel control={<Checkbox color="secondary" />} label="Có thể phân hủy sinh học" />
+          <FormControlLabel control={<Checkbox color="secondary" />} label="Sản phẩm đông lạnh" />
+        </FormGroup>
       </CustomTabPanel>
     </Box>
   );

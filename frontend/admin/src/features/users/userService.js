@@ -6,6 +6,11 @@ export const userService = {
     return data;
   },
 
+  fetchUserById: async (userId) => {
+    const { data } = await api.get(`/admin/users/${userId}`);
+    return data;
+  },
+
   fetchTrashUsers: async (params) => {
     const { data } = await api.get("/admin/sellers/trash", { params });
     return data;
@@ -32,6 +37,17 @@ export const userService = {
     return data;
   },
 
+  updateUserImage: async (userId, imageFile) => {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+
+    const {data} = await api.post(`/admin/user/${userId}/image`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return data;
+  },
   softDeleteUser: async (userIds) => {
     const ids = Array.isArray(userIds) ? userIds : [userIds];
     await api.delete(`/admin/soft/users`, { data: ids });

@@ -3,6 +3,7 @@ import { userService } from "./userService";
 
 const initialState = {
   users: [],
+  selectedUser: null,
   trashUsers: [],
   addresses: [],
   pagination: {},
@@ -24,6 +25,17 @@ export const fetchUsers = createAsyncThunk(
   }
 );
 
+export const fetchUserById = createAsyncThunk(
+  "users/fetchUserById",
+  async (userId, {rejectWithValue}) => {
+    try {
+      return await userService.fetchUserById(userId);
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+)
+
 export const fetchTrashUsers = createAsyncThunk(
   "users/fetchTrashUsers",
   async ({ params } = {}, { rejectWithValue }) => {
@@ -42,6 +54,17 @@ export const updateUser = createAsyncThunk(
       return await userService.updateUser(userId, user, image);
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const updateUserImage = createAsyncThunk(
+  "users/updateUserImage",
+  async ({ userId, imageFile }, thunkAPI) => {
+    try {
+      return await userService.updateUserImage(userId, imageFile);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );
@@ -196,12 +219,41 @@ const userSlice = createSlice({
       // Update
       .addCase(updateUser.fulfilled, (state, action) => {
         const updatedUser = action.payload;
+        state.selectedUser = updatedUser;
         const index = state.users.findIndex(
           (u) => u.userId === updatedUser.userId
         );
         if (index !== -1) {
           state.users[index] = updatedUser; // Cập nhật trong danh sách
         }
+      })
+
+      // fetch User by UserId
+      .addCase(fetchUserById.pending, (state) => {
+        state.isLoading = true;
+        state.errorMessage = null;
+      })
+      .addCase(fetchUserById.fulfilled, (state, action) => {
+        state.selectedUser = action.payload;
+        state.isLoading = false;
+      })
+      .addCase(fetchUserById.rejected, (state, action) => {
+        state.isLoading = false;
+        state.errorMessage = action.payload;
+      })
+      .addCase(updateUserImage.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(updateUserImage.fulfilled, (state, action) => {
+        state.isLoading = false;
+        if (state.selectedUser) {
+          state.selectedUser.avatar = action.payload.avatar;
+        }
+
+      })
+      .addCase(updateUserImage.rejected, (state, action) => {
+        state.isLoading = false;
+        state.errorMessage = action.payload;
       });
   },
 });
