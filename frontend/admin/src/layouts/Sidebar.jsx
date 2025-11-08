@@ -8,8 +8,9 @@ import {
   Groups2Outlined,
   HomeOutlined,
   ShoppingCartOutlined,
+  Settings,
+  LocalShipping
 } from "@mui/icons-material";
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import {
   Box,
   Collapse,
@@ -20,11 +21,12 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Typography,
+  Typography
 } from "@mui/material";
 import { Fragment, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import FlexBetween from "../components/share/FlexBetween";
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 
 const navItems = [
   {
@@ -48,7 +50,7 @@ const navItems = [
   },
   {
     text: "Đơn hàng",
-    icon: <LocalShippingIcon />,
+    icon: <LocalShipping />,
     children: [
       { text: "Danh sách đơn hàng", pathname: "admin/orders/list" },
       { text: "Chi tiết đơn hàng", pathname: "admin/orders/detail" },
@@ -63,11 +65,22 @@ const navItems = [
     ],
   },
   {
+    text: "Tài khoản", pathname: "admin/account", icon: <ManageAccountsIcon />,
+  },
+  {
     text: "Khách hàng",
     icon: <Groups2Outlined />,
     children: [
       { text: "Danh sách khách hàng", pathname: "admin/customers/list" },
       { text: "Chi tiết khách hàng", pathname: "admin/customers/detail" },
+    ],
+  },
+  {
+    text: "Cài đặt",
+    icon: <Settings />,
+    children: [
+      { text: "Thông tin", pathname: "admin/store-info" },
+      { text: "Địa điểm", pathname: "admin/local" },
     ],
   },
 ];

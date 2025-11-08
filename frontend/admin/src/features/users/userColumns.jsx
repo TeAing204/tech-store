@@ -18,7 +18,6 @@ export const getUserColumns = (softDeleteHandler) => [
     renderCell: (params) => {
       const avatarUrl =
         params.row.avatar ||
-        params.row.avatarUrl ||
         "../../../default_avatar.jpg";
       const userId = params.row.userId;
 

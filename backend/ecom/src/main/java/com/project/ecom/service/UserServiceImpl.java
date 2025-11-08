@@ -9,14 +9,20 @@ import com.project.ecom.payload.UserDTO;
 import com.project.ecom.payload.UserResponse;
 import com.project.ecom.repository.RoleRepository;
 import com.project.ecom.repository.UserRepository;
+import com.project.ecom.util.AuthUtil;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,6 +36,8 @@ public class UserServiceImpl implements UserService{
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    private AuthUtil authUtil;
+    @Autowired
     private ModelMapper modelMapper;
     @Autowired
     private RoleRepository roleRepository;
@@ -37,7 +45,8 @@ public class UserServiceImpl implements UserService{
     private FileService fileService;
     @Value("${project.image}")
     private String path;
-
+    @Autowired
+    private PasswordEncoder encoder;
     @Value("${image.base.url}")
     private String imageBaseUrl;
 
@@ -79,9 +88,12 @@ public class UserServiceImpl implements UserService{
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Trạng thái không hợp lệ: " + status);
         }
-
         userRepository.save(user);
-        return modelMapper.map(user, UserDTO.class);
+        UserDTO userDTO = modelMapper.map(user, UserDTO.class);
+        if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+            userDTO.setAvatar(constructImageUrl(user.getAvatar()));
+        }
+        return userDTO;
     }
 
     @Override
@@ -94,7 +106,14 @@ public class UserServiceImpl implements UserService{
             user.setDeleteAt(LocalDateTime.now());
         }
         userRepository.saveAll(users);
-        List<UserDTO> userDTOS = users.stream().map(user -> modelMapper.map(user, UserDTO.class)).toList();
+//        List<UserDTO> userDTOS = users.stream().map(user -> modelMapper.map(user, UserDTO.class)).toList();
+        List<UserDTO> userDTOS = users.stream().map(user -> {
+            UserDTO dto = modelMapper.map(user, UserDTO.class);
+            if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+                dto.setAvatar(constructImageUrl(user.getAvatar()));
+            }
+            return dto;
+        }).toList();
         return userDTOS;
     }
 
@@ -109,7 +128,14 @@ public class UserServiceImpl implements UserService{
         if (users.isEmpty()){
             throw new APIException("Thùng rác trống");
         }
-        List<UserDTO> userDTOS = users.stream().map(user -> modelMapper.map(user, UserDTO.class)).toList();
+//        List<UserDTO> userDTOS = users.stream().map(user -> modelMapper.map(user, UserDTO.class)).toList();
+        List<UserDTO> userDTOS = users.stream().map(user -> {
+            UserDTO dto = modelMapper.map(user, UserDTO.class);
+            if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+                dto.setAvatar(constructImageUrl(user.getAvatar()));
+            }
+            return dto;
+        }).toList();
         UserResponse userResponse = new UserResponse();
         userResponse.setContent(userDTOS);
         userResponse.setPageNumber(userPage.getNumber());
@@ -164,14 +190,13 @@ public class UserServiceImpl implements UserService{
             }
 
             String fileName = fileService.uploadImage(path, image);
-            user.setAvatar(fileName);
+            user.setAvatar(constructImageUrl(fileName));
         }
 
         User savedUser = userRepository.save(user);
 
         UserDTO dto = modelMapper.map(savedUser, UserDTO.class);
         dto.setAvatar(constructImageUrl(savedUser.getAvatar()));
-
         return dto;
     }
 
@@ -180,7 +205,7 @@ public class UserServiceImpl implements UserService{
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", userId));
         String fileName = fileService.uploadImage(path, image);
-        user.setAvatar(fileName);
+        user.setAvatar(constructImageUrl(fileName));
         User savedUser = userRepository.save(user);
         return modelMapper.map(savedUser, UserDTO.class);
     }
@@ -195,6 +220,110 @@ public class UserServiceImpl implements UserService{
             dto.setAvatar(constructImageUrl(user.getAvatar()));
         }
         return dto;
+    }
+
+    @Override
+    public void resetAdminPassword(Long userId, String newPassword, Authentication authentication) {
+        // Lấy người thực hiện hành động
+        User currentUser = userRepository.findByEmail(authUtil.loggedInEmail())
+                .orElseThrow(() -> new APIException("Người dùng hiện tại không tồn tại"));
+
+        // Lấy người bị reset mật khẩu
+        User targetUser = userRepository.findById(userId)
+                .orElseThrow(() -> new APIException("Không tìm thấy quản trị viên có ID: " + userId));
+        // Lấy role hiện tại và role của người bị reset
+        String currentRole = currentUser.getRoles()
+                .stream()
+                .findFirst()
+                .map(role -> role.getRoleName().name())
+                .orElse("UNKNOWN");
+
+        String targetRole = targetUser.getRoles()
+                .stream()
+                .findFirst()
+                .map(role -> role.getRoleName().name())
+                .orElse("UNKNOWN");
+        // Chỉ admin cấp cao mới có quyền reset
+        if (!"ROLE_ADMIN".equals(currentRole)) {
+            throw new APIException("Bạn không có quyền reset mật khẩu cho người khác");
+        }
+        // Không thể tự reset mật khẩu
+        if (currentUser.getUserId().equals(targetUser.getUserId())) {
+            throw new APIException("Không thể tự reset mật khẩu của chính mình");
+        }
+        // Không reset cho user thường
+        if ("ROLE_USER".equals(targetRole)) {
+            throw new APIException("Không thể reset mật khẩu cho người dùng thông thường");
+        }
+        // Mã hóa và lưu mật khẩu mới
+        targetUser.setPassword(encoder.encode(newPassword));
+        userRepository.save(targetUser);
+    }
+
+//    @Override
+//    public UserDTO updateAccount(UserDTO userDTO) {
+//        User user = userRepository.findByEmail(authUtil.loggedInEmail())
+//                .orElseThrow(() -> new APIException("Người dùng hiện tại không tồn tại"));
+//
+//        if (userDTO.getUsername() != null && !userDTO.getUsername().isBlank()) {
+//            user.setUsername(userDTO.getUsername());
+//        }
+//
+//        if (userDTO.getEmail() != null && !userDTO.getEmail().isBlank()) {
+//            user.setEmail(userDTO.getEmail());
+//        }
+//
+//        if (userDTO.getPhoneNumber() != null && !userDTO.getPhoneNumber().isBlank()) {
+//            user.setPhoneNumber(userDTO.getPhoneNumber());
+//        }
+//        User savedUser = userRepository.save(user);
+//        return modelMapper.map(savedUser, UserDTO.class);
+//    }
+    @Override
+    public UserDTO updateAccount(UserDTO userDTO) {
+        User user = userRepository.findByEmail(authUtil.loggedInEmail())
+                .orElseThrow(() -> new APIException("Người dùng hiện tại không tồn tại"));
+
+        // Cập nhật username nếu có và khác giá trị cũ
+        if (userDTO.getUsername() != null && !userDTO.getUsername().isBlank()) {
+            if (userRepository.existsByUsername(userDTO.getUsername())
+                    && !userDTO.getUsername().equals(user.getUsername())) {
+                throw new APIException("Tên người dùng đã tồn tại");
+            }
+            user.setUsername(userDTO.getUsername());
+        }
+
+        // Cập nhật email nếu có và khác giá trị cũ
+        if (userDTO.getEmail() != null && !userDTO.getEmail().isBlank()) {
+            if (userRepository.existsByEmail(userDTO.getEmail())
+                    && !userDTO.getEmail().equals(user.getEmail())) {
+                throw new APIException("Email đã tồn tại");
+            }
+            user.setEmail(userDTO.getEmail());
+        }
+
+        // Cập nhật số điện thoại nếu có và khác giá trị cũ
+        if (userDTO.getPhoneNumber() != null && !userDTO.getPhoneNumber().isBlank()) {
+            if (userRepository.existsByPhoneNumber(userDTO.getPhoneNumber())
+                    && !userDTO.getPhoneNumber().equals(user.getPhoneNumber())) {
+                throw new APIException("Số điện thoại đã tồn tại");
+            }
+            user.setPhoneNumber(userDTO.getPhoneNumber());
+        }
+
+        User savedUser = userRepository.save(user);
+        return modelMapper.map(savedUser, UserDTO.class);
+    }
+
+
+    @Override
+    public UserDTO updateAccountImage(MultipartFile image) throws IOException {
+        User user = userRepository.findByEmail(authUtil.loggedInEmail())
+                .orElseThrow(() -> new APIException("Người dùng hiện tại không tồn tại"));
+        String fileName = fileService.uploadImage(path, image);
+        user.setAvatar(fileName);
+        User savedUser = userRepository.save(user);
+        return modelMapper.map(savedUser, UserDTO.class);
     }
 
 

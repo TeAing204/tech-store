@@ -4,6 +4,9 @@ import com.project.ecom.model.UserStatus;
 import com.project.ecom.payload.UserDTO;
 import com.project.ecom.payload.UserResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -26,4 +29,10 @@ public interface UserService {
     UserDTO updateUserImage(Long userId, MultipartFile image) throws IOException;
 
     UserDTO getUserById(Long userId);
+
+    void resetAdminPassword(Long userId, @NotBlank @Size(min = 5, message = "Mật khẩu tối thiểu chứa 5 ký tự") String newPassword, Authentication authentication);
+
+    UserDTO updateAccount(UserDTO userDTO);
+
+    UserDTO updateAccountImage(MultipartFile image) throws IOException;
 }

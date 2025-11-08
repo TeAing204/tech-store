@@ -1,4 +1,4 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import InputField from "../components/form/InputField";
@@ -9,33 +9,37 @@ import { themeSettings } from "../utils/theme";
 import GoogleIcon from "@mui/icons-material/Google";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import { toast } from "react-hot-toast";
-import LoginIcon from '@mui/icons-material/Login';
+import LoginIcon from "@mui/icons-material/Login";
 
 const Login = () => {
   const dispatch = useDispatch();
+  const { loading } = useSelector((state) => state.auth);
   const {
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm({ mode: "onTouched" });
   const lightTheme = createTheme(themeSettings("light"));
 
   const loginHandler = async (data) => {
-  try {
-    const res = await dispatch(login(data));
+    try {
+      const res = await dispatch(login(data));
 
-    if (res.meta.requestStatus === "fulfilled") {
-      toast.success("Đăng nhập thành công!");
-      reset();
-    } else {
-      toast.error(res.payload?.message || "Đăng nhập thất bại!");
+      if (res.meta.requestStatus === "fulfilled") {
+        toast.success("Đăng nhập thành công!");
+        reset();
+      } else {
+        console.log(res);
+        const message = res.payload || "Đăng nhập thất bại!";
+        setError("password", { type: "manual", message });
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra, vui lòng thử lại!");
+      console.error(error);
     }
-  } catch (error) {
-    toast.error("Có lỗi xảy ra, vui lòng thử lại!");
-    console.error(error);
-  }
-};
+  };
   return (
     <ThemeProvider theme={lightTheme}>
       <div className="bg-[#edf2f9] w-full h-full">
@@ -45,7 +49,7 @@ const Login = () => {
             className="sm:w-[450px] w-[360px] bg-white shadow py-8 sm:px-8 px-4 rounded-md"
           >
             <div className="flex items-center flex-col text-blue-600 font-bold mb-4">
-              <LoginIcon sx={{fontSize: 40}}/>
+              <LoginIcon sx={{ fontSize: 40 }} />
               <span className="text-3xl">Chào mừng</span>
             </div>
             <FlexBetween className="mb-4">
@@ -104,18 +108,14 @@ const Login = () => {
                 height: "40px",
                 fontSize: "16px",
                 color: "#fff",
-                backgroundColor: "#1877F2", 
-                transition: "background-color 0.3s ease", 
+                backgroundColor: "#1877F2",
+                transition: "background-color 0.3s ease",
                 "&:hover": {
-                  backgroundColor: "#0B5CCB", 
+                  backgroundColor: "#0B5CCB",
                 },
               }}
             >
-              {/* {loader ? (
-                            <p>Loading...</p>
-                        ) : ( */}
-              <p>Đăng nhập</p>
-              {/* )} */}
+              {loading ? <p>Loading...</p> : <p>Đăng nhập</p>}
             </Button>
             <div className="flex items-center justify-center my-4">
               <div className="flex-grow border-t border-gray-300"></div>

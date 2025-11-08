@@ -9,6 +9,7 @@ const InputField = ({
   required,
   message,
   className,
+  disabled,
   min,
   placeholder,
 }) => {
@@ -23,11 +24,11 @@ const InputField = ({
       >
         {label}
       </label>
-
       <input
         type={type}
         name={id}
         id={id}
+        disabled={disabled}
         placeholder={placeholder}
         className={`px-4 py-2 border border-[#c2c2c2] outline-none rounded-md bg-transparent transition-all duration-150
     focus:ring-2 focus:ring-blue-300 focus:border-blue-400`}

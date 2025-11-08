@@ -2,6 +2,7 @@ package com.project.ecom.controller;
 
 import com.project.ecom.configuration.AppConstants;
 import com.project.ecom.model.UserStatus;
+import com.project.ecom.payload.PasswordResetRequest;
 import com.project.ecom.payload.ProductDTO;
 import com.project.ecom.payload.UserDTO;
 import com.project.ecom.payload.UserResponse;
@@ -52,11 +53,18 @@ public class UserController {
     }
 
     @PutMapping("/admin/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long userId, @RequestPart("user") UserDTO userDTO, @RequestPart(value = "image", required = false) MultipartFile image
             ) throws IOException {
         UserDTO updatedUser = userService.updateUser(userId, userDTO, image);
         return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+    }
+
+    @PutMapping("/account")
+    public ResponseEntity<UserDTO> updateAccount(@RequestBody UserDTO userDTO){
+        UserDTO updatedAccount = userService.updateAccount(userDTO);
+        return new ResponseEntity<>(updatedAccount, HttpStatus.OK);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -92,10 +100,24 @@ public class UserController {
         UserDTO userDTO = userService.updateUserImage(userId, image);
         return new ResponseEntity<>(userDTO, HttpStatus.OK);
     }
-
+    @PostMapping("account/image")
+    public ResponseEntity<UserDTO> updateAccountImage(@RequestParam("image") MultipartFile image) throws IOException {
+        UserDTO userDTO = userService.updateAccountImage(image);
+        return new ResponseEntity<>(userDTO, HttpStatus.OK);
+    }
     @GetMapping("/admin/users/{userId}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long userId){
         UserDTO userDTO = userService.getUserById(userId);
         return new ResponseEntity<>(userDTO, HttpStatus.OK);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/admin/users/{userId}/reset-password")
+    public ResponseEntity<String> resetAdminPassword(
+            @PathVariable Long userId,
+            @Valid @RequestBody PasswordResetRequest request,
+            Authentication authentication) {
+        userService.resetAdminPassword(userId, request.getNewPassword(), authentication);
+        return ResponseEntity.ok("Reset mật khẩu quản trị viên thành công");
     }
 }

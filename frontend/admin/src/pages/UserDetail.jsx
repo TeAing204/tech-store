@@ -21,6 +21,7 @@ import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchUserById,
+  resetAdminPassword,
   updateUser,
   updateUserImage,
 } from "../features/users/userSlice";
@@ -29,7 +30,7 @@ import BackButton from "../components/action/BackButton";
 import PasswordInput from "../features/users/PasswordInput";
 import InputField from "../components/form/InputField";
 import IsLoading from "../components/spinner/IsLoading";
-import EditSquareIcon from '@mui/icons-material/EditSquare';
+import EditSquareIcon from "@mui/icons-material/EditSquare";
 const UserDetail = () => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
@@ -49,6 +50,14 @@ const UserDetail = () => {
     handleSubmit,
     reset,
     formState: { errors },
+  } = useForm({
+    mode: "onTouched",
+  });
+  const {
+    register: registerPassword,
+    handleSubmit: handleSubmitPassword,
+    formState: { errors: passwordErrors },
+    reset: resetPasswordForm,
   } = useForm({
     mode: "onTouched",
   });
@@ -90,6 +99,24 @@ const UserDetail = () => {
       toast.error("Cập nhật người dùng thất bại!");
     }
   };
+  const onSubmitPassword = async (data) => {
+    if (data.newPassword !== data.confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp!");
+      return;
+    }
+
+    try {
+      await dispatch(
+        resetAdminPassword({ userId, password: data.newPassword })
+      ).unwrap();
+      toast.success("Đặt lại mật khẩu thành công!");
+      resetPasswordForm();
+    } catch (err) {
+      console.error("Lỗi đặt lại mật khẩu:", err);
+      toast.error("Đặt lại mật khẩu thất bại!");
+    }
+  };
+
   const handleUploadAvatar = async () => {
     if (!selectedAvatar) return toast.error("Vui lòng chọn ảnh!");
 
@@ -146,10 +173,12 @@ const UserDetail = () => {
                     "&:hover": { backgroundColor: theme.palette.action.hover },
                   }}
                 >
-                  <EditSquareIcon/>
+                  <EditSquareIcon />
                 </IconButton>
               </div>
-              <span className="text-xl font-medium mt-4 mb-1">{user.username}</span>
+              <span className="text-xl font-medium mt-4 mb-1">
+                {user.username}
+              </span>
               <span className="border border-[#16a34a] text-[#16a34a] bg-[rgba(22,163,74,0.1)] px-2 py-0.5 rounded-md">
                 {user?.roles?.map((r) =>
                   r.roleName
@@ -219,21 +248,33 @@ const UserDetail = () => {
                   Tối thiểu 5 ký tự, viết hoa và ký hiệu
                 </div>
               </Alert>
-              <div className="mb-1">
-                <div className="flex justify-between flex-col md:flex-row gap-x-4">
+
+              <form onSubmit={handleSubmitPassword(onSubmitPassword)}>
+                <div className="flex justify-between flex-col md:flex-row gap-x-4 mb-4">
                   <PasswordInput
                     label="Mật khẩu mới"
                     placeholder="Mật khẩu mới"
+                    name="newPassword"
+                    register={registerPassword}
+                    error={passwordErrors.newPassword}
                   />
                   <PasswordInput
                     label="Xác nhận mật khẩu"
                     placeholder="Xác nhận mật khẩu mới"
+                    name="confirmPassword"
+                    register={registerPassword}
+                    error={passwordErrors.confirmPassword}
                   />
                 </div>
-              </div>
-              <Button size="large" variant="contained" color="secondary">
-                Thay đổi mật khẩu
-              </Button>
+                <Button
+                  size="large"
+                  variant="contained"
+                  color="secondary"
+                  type="submit"
+                >
+                  Thay đổi mật khẩu
+                </Button>
+              </form>
             </Box>
           </Box>
         </div>

@@ -53,7 +53,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
             Pageable pageDetails
     );
 
-    Optional<Object> findByEmail(String email);
+    Optional<User> findByEmail(String email);
+
 
     boolean existsByPhoneNumber(String phoneNumber);
 }

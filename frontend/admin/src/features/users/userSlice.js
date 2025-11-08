@@ -27,14 +27,14 @@ export const fetchUsers = createAsyncThunk(
 
 export const fetchUserById = createAsyncThunk(
   "users/fetchUserById",
-  async (userId, {rejectWithValue}) => {
+  async (userId, { rejectWithValue }) => {
     try {
       return await userService.fetchUserById(userId);
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
   }
-)
+);
 
 export const fetchTrashUsers = createAsyncThunk(
   "users/fetchTrashUsers",
@@ -113,6 +113,18 @@ export const restoreUser = createAsyncThunk(
   }
 );
 
+export const resetAdminPassword = createAsyncThunk(
+  "users/resetAdminPassword",
+  async ({ userId, password }, { rejectWithValue }) => {
+    try {
+      return await userService.resetAdminPassword(userId, password);
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+
 // ---- Slice ----
 const userSlice = createSlice({
   name: "users",
@@ -140,8 +152,6 @@ const userSlice = createSlice({
         state.isLoading = false;
         state.errorMessage = action.payload;
       })
-
-      // Update status
       .addCase(updateUserStatus.fulfilled, (state, action) => {
         const updatedUser = action.payload;
         const index = state.users.findIndex(
@@ -249,12 +259,11 @@ const userSlice = createSlice({
         if (state.selectedUser) {
           state.selectedUser.avatar = action.payload.avatar;
         }
-
       })
       .addCase(updateUserImage.rejected, (state, action) => {
         state.isLoading = false;
         state.errorMessage = action.payload;
-      });
+      })
   },
 });
 

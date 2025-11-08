@@ -41,7 +41,7 @@ export const userService = {
     const formData = new FormData();
     formData.append("image", imageFile);
 
-    const {data} = await api.post(`/admin/user/${userId}/image`, formData, {
+    const { data } = await api.post(`/admin/user/${userId}/image`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -64,5 +64,13 @@ export const userService = {
     const ids = Array.isArray(userIds) ? userIds : [userIds];
     await api.post("/admin/restore/users", ids);
     return ids;
+  },
+
+  resetAdminPassword: async (userId, password) => {
+    const { data } = await api.patch(
+      `/admin/users/${userId}/reset-password`, { newPassword: password }, 
+      { headers: { "Content-Type": "application/json" } }
+    );
+    return data;
   },
 };

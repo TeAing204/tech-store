@@ -19,6 +19,8 @@ import TrashProducts from "./pages/TrashProducts";
 import Users from "./pages/Users";
 import TrashUsers from "./pages/TrashUsers";
 import UserDetail from "./pages/UserDetail";
+import Account from "./pages/Account";
+import StoreInfo from "./pages/StoreInfo";
 
 function App() {
   const mode = useSelector((state) => state.global.mode);
@@ -48,6 +50,8 @@ function App() {
                 <Route path="/admin/users" element={<Users/>}/>
                 <Route path="/admin/users/trash" element={<TrashUsers/>}/>
                 <Route path="/admin/users/user/:userId" element={<UserDetail/>}/>
+                <Route path="/admin/account" element={<Account/>}/>
+                <Route path="/admin/store-info" element={<StoreInfo/>}/>
               </Route>
             </Route>
             {/* mặc định */}
